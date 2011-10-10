@@ -3,8 +3,12 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
+#include <linux/types.h>
 
-int my_len = 4;
+#define MY_SET_LEN _IOW('t', 1, uint32_t)
+#define MY_GET_LEN _IOR('t', 2, uint64_t)
+
+uint32_t my_len = 4;
 
 ssize_t my_read(struct file *filp, char __user *ptr, size_t count, loff_t *off)
 {
@@ -21,7 +25,7 @@ ssize_t my_write(struct file *filp, const char __user *ptr, size_t count,
 	loff_t *off)
 {
 	char buf[100];
-	int read = (count>99)? 99 : count;
+	int read = (count > 99) ? 99 : count;
 
 	if (copy_from_user(buf, ptr, read) != 0)
 		return -EFAULT;
@@ -48,21 +52,26 @@ int my_release(struct inode *inode, struct file *filp)
 long my_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	/* check command number */
-	if (_IOW('t', 1, int) == cmd) {
-		if ((int) arg > 4 || (int) arg < 1)
+	switch (cmd) {
+	case MY_SET_LEN:
+		if ((uint32_t) arg > 4 || (uint32_t) arg < 1)
 			return -EINVAL;
-		my_len = (int) arg;
-	} else if (_IOR('t', 2, int*) == cmd) {
-		if (copy_to_user((int*) arg, &my_len, sizeof(my_len)) != 0)
+		my_len = (uint32_t) arg;
+	break;
+	case MY_GET_LEN:
+		if (copy_to_user((uint32_t *) arg, &my_len,
+			sizeof(my_len)) != 0)
 			return -EFAULT;
-	} else {
+	break;
+	default:
 		return -EINVAL;
+	break;
 	}
 
 	return 0;
 }
 
-struct file_operations myfops = {
+const struct file_operations myfops = {
 	.owner = THIS_MODULE,
 	.read = my_read,
 	.open = my_open,
@@ -80,6 +89,8 @@ struct miscdevice mydevice = {
 static int my_init(void)
 {
 	misc_register(&mydevice);
+	printk(KERN_INFO "MY_SET_LEN: %u\n", MY_SET_LEN);
+	printk(KERN_INFO "MY_GET_LEN: %u\n", MY_GET_LEN);
 
 	return 0;
 }
