@@ -10,6 +10,7 @@
 #include <linux/string.h>
 #include <linux/kernel.h>
 #include <linux/io.h>
+#include <linux/mm.h>
 
 #define MY_SET_LEN _IOW('t', 1, uint32_t)
 #define MY_GET_LEN _IOR('t', 2, uint64_t)
@@ -141,7 +142,7 @@ static int my_init(void)
 	/* write page virtual and physical address to every page */
 	for (ptr = buf; ptr < buf + BUF_SIZE; ptr += PAGE_SIZE) {
 		sprintf(str, "%p: %lx\n", ptr,
-			(unsigned long) virt_to_phys(ptr));
+			(unsigned long) vmalloc_to_pfn(ptr) << PAGE_SHIFT);
 		strcpy(ptr, str);
 	}
 
