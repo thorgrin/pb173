@@ -37,8 +37,10 @@ ssize_t my_read(struct file *filp, char __user *ptr, size_t count, loff_t *off)
 	mutex_lock(&lock);
 
 	/* write from fifo to user */
-	if (kfifo_to_user(&my_fifo, ptr, count, &read) != 0)
+	if (kfifo_to_user(&my_fifo, ptr, count, &read) != 0) {
+		mutex_unlock(&lock);
 		return -EFAULT;
+	}
 
 	/* unlock after reading the buffer */
 	mutex_unlock(&lock);
@@ -61,8 +63,10 @@ ssize_t my_write(struct file *filp, const char __user *ptr, size_t count,
 	mutex_lock(&lock);
 
 	/* write from user to fifo */
-	if (kfifo_from_user(&my_fifo, ptr, count, &write) != 0)
+	if (kfifo_from_user(&my_fifo, ptr, count, &write) != 0) {
+		mutex_unlock(&lock);
 		return -EFAULT;
+	}
 
 	/* no more work with buffer, free the lock */
 	mutex_unlock(&lock);
