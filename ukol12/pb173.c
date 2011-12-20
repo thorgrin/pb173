@@ -44,7 +44,7 @@ static ssize_t my_write(struct file *filp, const char __user *buf, size_t count,
 
 	/* create the sk_buff structure */
 	struct sk_buff *skb = netdev_alloc_skb(myeth, count);
-	skb->len = sizeof(count);
+	skb->len = ret;
 
 	/* copy the data from user to the structure */
 	if (copy_from_user(skb->data, buf, count))
